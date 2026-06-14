@@ -1,0 +1,4 @@
+.env
+wg-easy/
+blog/*
+!blog/.gitkeep
