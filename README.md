@@ -239,6 +239,59 @@ docker compose pull && docker compose up -d
 | 证书申请失败 | API Token 权限不足 | 确认 Token 有 Zone:DNS:Edit 权限 |
 | `connection refused` | 端口未开放 | 检查安全组/防火墙规则 |
 | 502 Bad Gateway | Caddy 反向代理目标不可达 | 检查后端服务是否启动 |
+| opencode ssh-mcp 启动失败 | 配置参数不完整 | 见下方 [SSH MCP 排查](#ssh-mcp-排查) |
+
+### SSH MCP 排查
+
+**时间**: 2026-06-14
+
+**现象**: opencode 中配置的 ssh-mcp 服务无法启动。
+
+**配置文件**: `~/.config/opencode/opencode.jsonc` → `mcp.ssh-mcp`
+
+**排查过程**:
+
+1. 阅读 `~/.config/opencode/opencode.jsonc`，找到 ssh-mcp 的 command：
+   ```
+   npx -y ssh-mcp -- --host=alivps --key=~/.ssh/id_ed25519 --timeout=30000
+   ```
+
+2. 直接运行该命令测试，报错：
+   ```
+   Error: Configuration error:
+   Missing required --host
+   Missing required --user
+   ```
+   但 `--host=alivps` 已传入，说明 `--` 分隔符导致参数解析异常。实际 ssh-mcp v1.5.0 使用 `--host=` 格式（而非 argparse 风格），`--` 被忽略。
+
+3. 查看 ssh-mcp 源码 (`~/.npm/_npx/.../ssh-mcp/build/index.js`)，确认：
+   - 必需参数：`--host`、`--user`
+   - 可选参数：`--port`(默认22)、`--key`、`--password`、`--timeout`(默认60000)、`--disableSudo` 等
+
+4. 检查 SSH 环境：
+   - `~/.ssh/config` 中 `alivps` Host 定义：`HostName 8.152.200.33`、`User peter`、`Port 22`
+   - 全局 `ProxyCommand` 通过 SOCKS5 代理 `192.168.2.100:10808`
+   - 本地密钥文件：`~/.ssh/id_ed25519` **不存在**，实际密钥为 `~/.ssh/id_ed25519.hu`
+
+5. 测试 SSH 直连：
+   - `ssh -i ~/.ssh/id_ed25519.hu alivps` → 成功
+   - `ssh -i ~/.ssh/id_rsa alivps` → Permission denied（密钥未授权）
+   - 说明远程服务器只信任 `id_ed25519.hu` 对应的公钥
+
+6. **修复以下 3 个问题**：
+
+   | 问题 | 原因 | 修复 |
+   |------|------|------|
+   | 缺少 `--user` | ssh-mcp 要求 `--user` 参数 | 添加 `--user=peter` |
+   | SSH 密钥路径错误 | `~/.ssh/id_ed25519` 不存在，且 Node.js `fs.readFile` 不展开 `~` | 改为绝对路径 `--key=/home/peter/.ssh/id_ed25519.hu` |
+   | 主机名不可解析 | `alivps` 是 SSH config 别名，`ssh2` 库不解析 `~/.ssh/config` | 改为实际 IP `--host=8.152.200.33` |
+
+**修复后 command**:
+```
+npx -y ssh-mcp -- --host=8.152.200.33 --user=peter --key=/home/peter/.ssh/id_ed25519.hu --timeout=30000
+```
+
+**验证**: 直接运行命令输出 `SSH MCP Server running on stdio`，启动成功。
 
 ### 测试端口可达性
 

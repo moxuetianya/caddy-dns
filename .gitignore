@@ -2,3 +2,5 @@
 wg-easy/
 blog/*
 !blog/.gitkeep
+.playwright*
+.claude
