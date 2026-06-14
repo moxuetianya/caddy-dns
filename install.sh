@@ -8,18 +8,18 @@ error() { echo -e "${RED}[ERR]${NC} $*"; }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# ── 1. 检查依赖（仅告警，不安装） ──
+# ── 1. 检查依赖 ──
 echo ""
 MISSING=0
 command -v docker &>/dev/null || { warn "docker 未安装"; MISSING=1; }
-docker compose version &>/dev/null 2>&1 || { warn "docker compose 不可用"; MISSING=1; }
+docker compose version &>/dev/null 2>&1 || docker-compose version &>/dev/null 2>&1 || { warn "docker compose 不可用"; MISSING=1; }
 [ $MISSING -eq 1 ] && warn "请先安装缺失的依赖，然后重新运行本脚本"
 info "依赖检查完成"
 
 # ── 2. 收集信息 ──
 echo ""
 echo "============================================"
-echo "  Caddy + Cloudflare DNS 配置"
+echo "  Caddy + Cloudflare DNS + wg-easy"
 echo "============================================"
 echo ""
 
@@ -35,9 +35,18 @@ read -r -p "Cloudflare API Token: " CF_TOKEN
 read -r -p "wg-easy Host (默认 $DOMAIN): " WG_HOST
 WG_HOST=${WG_HOST:-$DOMAIN}
 
-WG_PASSWORD=$(openssl rand -base64 16)
-read -r -p "wg-easy 管理员密码 (默认随机: ${WG_PASSWORD:0:12}***): " WG_PASS_INPUT
+WG_PASSWORD=$(openssl rand -base64 12)
+read -r -p "wg-easy 管理员密码 (默认随机: ${WG_PASSWORD:0:8}***): " WG_PASS_INPUT
 WG_PASSWORD=${WG_PASS_INPUT:-$WG_PASSWORD}
+
+# 生成 bcrypt 哈希 (wg-easy v14+)
+echo "正在生成密码哈希..."
+WG_PASSWORD_HASH=$(docker run --rm ghcr.io/wg-easy/wg-easy wgpw "$WG_PASSWORD" 2>/dev/null | grep PASSWORD_HASH | cut -d\' -f2)
+if [ -z "$WG_PASSWORD_HASH" ]; then
+    # 备选: 用 htpasswd 生成
+    WG_PASSWORD_HASH=$(echo "$WG_PASSWORD" | docker run --rm -i httpd:alpine htpasswd -nbB -C 12 '' "$WG_PASSWORD" 2>/dev/null | cut -d: -f2 | sed 's/\$/$$/g')
+    [ -z "$WG_PASSWORD_HASH" ] && { error "无法生成密码哈希，跳过"; WG_PASSWORD_HASH="PLACEHOLDER"; }
+fi
 
 # ── 3. 替换占位符 ──
 sed -i "s/{{DOMAIN}}/$DOMAIN/g" "$SCRIPT_DIR/Caddyfile"
@@ -58,7 +67,7 @@ if [ "$SKIP_ENV" != "1" ]; then
     cat > "$SCRIPT_DIR/.env" <<EOF
 CLOUDFLARE_API_TOKEN=$CF_TOKEN
 WG_HOST=$WG_HOST
-WG_PASSWORD=$WG_PASSWORD
+WG_PASSWORD_HASH=$WG_PASSWORD_HASH
 EOF
     info ".env 已生成"
 fi
@@ -73,15 +82,17 @@ echo "============================================"
 echo "  配置完成!"
 echo "============================================"
 echo ""
+echo "  推荐: 使用 Cloudflare Tunnel（详见 docs/cloudflared-setup.md）"
+echo "  备选: Cloudflare 控制台中配置 Origin Rules 端口回源:"
+echo "    SSL/TLS → 完全 (Full)"
+echo "    规则 → Origin Rules: https://$DOMAIN/* → 端口 $PORT"
+echo ""
 echo "  域名:       https://$DOMAIN"
 echo "  端口:       $PORT"
 echo "  wg-easy UI: https://$DOMAIN/wg/"
 echo "  wg-easy 密码: $WG_PASSWORD (请妥善保管)"
 echo ""
-echo "  接下来:"
-echo "  1. 确认 Cloudflare DNS A 记录指向本机公网 IP"
-echo "  2. Cloudflare Origin Rules 重写端口 -> $PORT"
-echo "  3. 运行下面的命令启动:"
+echo "  接下来运行:"
 echo ""
 echo "     docker compose up -d"
 echo ""

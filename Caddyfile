@@ -1,11 +1,5 @@
-{{DOMAIN}}:{{PORT}} {
-    tls {
-        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-    }
-
-    # wg-easy Web UI (子路径反向代理)
-    # 注意: wg-easy 不支持自定义 base path，
-    # 若页面资源加载异常请改用子域名方案 (见下方注释)
+# Cloudflare SSL 模式建议「完全(严格)」，Tunnel 提供端到端加密
+http://{{DOMAIN}}:{{PORT}} {
     handle_path /wg* {
         reverse_proxy wg-easy:51821 {
             header_up Host {http.reverse_proxy.upstream.host}
@@ -13,25 +7,9 @@
         }
     }
 
-    # 静态 blog
     handle {
         root * /var/www/blog
         file_server
         encode gzip
     }
 }
-
-# 如果子路径方案有问题，改用子域名方式:
-# 1. 在 Cloudflare DNS 添加 wg.{{DOMAIN}} 的 A 记录 (开启代理)
-# 2. Cloudflare Origin Rules 中为 wg.{{DOMAIN}} 也添加端口重写规则
-# 3. 取消下面配置的注释，并注释掉上面的 handle_path /wg* 块
-#
-# wg.{{DOMAIN}}:{{PORT}} {
-#     tls {
-#         dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-#     }
-#     reverse_proxy wg-easy:51821 {
-#         header_up Host {http.reverse_proxy.upstream.host}
-#         header_up X-Forwarded-For {remote_host}
-#     }
-# }
