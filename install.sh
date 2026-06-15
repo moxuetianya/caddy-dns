@@ -28,6 +28,8 @@ read -r -p "域名: " DOMAIN
 
 read -r -p "WireGuard 子域名 (默认 wg): " WG_SUBDOMAIN
 WG_SUBDOMAIN=${WG_SUBDOMAIN:-wg}
+read -r -p "Blog 子域名 (默认 blog): " BLOG_SUBDOMAIN
+BLOG_SUBDOMAIN=${BLOG_SUBDOMAIN:-blog}
 
 read -r -p "监听端口 (默认 2083): " PORT
 PORT=${PORT:-2083}
@@ -37,6 +39,9 @@ read -r -p "Cloudflare API Token: " CF_TOKEN
 
 read -r -p "wg-easy Host (默认 $WG_SUBDOMAIN.$DOMAIN): " WG_HOST
 WG_HOST=${WG_HOST:-$WG_SUBDOMAIN.$DOMAIN}
+
+BLOG_DOMAIN=$BLOG_SUBDOMAIN.$DOMAIN
+WG_DOMAIN=$WG_SUBDOMAIN.$DOMAIN
 
 WG_PASSWORD=$(openssl rand -base64 12)
 read -r -p "wg-easy 管理员密码 (默认随机: ${WG_PASSWORD:0:8}***): " WG_PASS_INPUT
@@ -52,10 +57,10 @@ if [ -z "$WG_PASSWORD_HASH" ]; then
 fi
 
 # ── 3. 替换占位符 ──
-sed -i "s/{{WG_SUBDOMAIN}}/$WG_SUBDOMAIN/g" "$SCRIPT_DIR/Caddyfile"
-sed -i "s/{{DOMAIN}}/$DOMAIN/g"           "$SCRIPT_DIR/Caddyfile"
-sed -i "s/{{PORT}}/$PORT/g"               "$SCRIPT_DIR/Caddyfile"
-sed -i "s/{{PORT}}/$PORT/g"               "$SCRIPT_DIR/docker-compose.yaml"
+sed -i "s/{{BLOG_DOMAIN}}/$BLOG_DOMAIN/g"   "$SCRIPT_DIR/Caddyfile"
+sed -i "s/{{WG_DOMAIN}}/$WG_DOMAIN/g"       "$SCRIPT_DIR/Caddyfile"
+sed -i "s/{{PORT}}/$PORT/g"                 "$SCRIPT_DIR/Caddyfile"
+sed -i "s/{{PORT}}/$PORT/g"                 "$SCRIPT_DIR/docker-compose.yaml"
 info "Caddyfile / docker-compose.yaml 已配置"
 
 # ── 4. 生成 .env ──
@@ -89,11 +94,10 @@ echo ""
 echo "  推荐: 使用 Cloudflare Tunnel（详见 docs/cloudflared-setup.md）"
 echo "  备选: Cloudflare 控制台中配置 Origin Rules 端口回源:"
 echo "    SSL/TLS → 完全 (Full)"
-echo "    规则 → Origin Rules: https://$DOMAIN/* → 端口 $PORT"
+echo "    规则 → Origin Rules: https://$BLOG_DOMAIN/* → 端口 $PORT"
 echo ""
-echo "  域名:       https://$DOMAIN"
-echo "  端口:       $PORT"
-echo "  wg-easy UI: https://$WG_SUBDOMAIN.$DOMAIN/"
+echo "  Blog:       https://$BLOG_DOMAIN"
+echo "  wg-easy UI: https://$WG_DOMAIN"
 echo "  wg-easy 密码: $WG_PASSWORD (请妥善保管)"
 echo ""
 echo "  接下来运行:"

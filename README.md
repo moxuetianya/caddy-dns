@@ -59,7 +59,7 @@ tunnel: <tunnel-id>
 credentials-file: /home/peter/.cloudflared/<tunnel-id>.json
 
 ingress:
-  - hostname: your-domain.com
+  - hostname: blog.your-domain.com
     service: http://localhost:2083
   - hostname: wg.your-domain.com
     service: http://localhost:2083
@@ -178,7 +178,7 @@ wg-easy 是集成 Web UI 的 WireGuard VPN 管理工具。
 ### Tunnel 模式（当前默认）
 
 ```caddyfile
-http://your-domain.com:2083 {
+http://blog.your-domain.com:2083 {
     root * /var/www/blog
     file_server
     encode gzip
@@ -195,7 +195,7 @@ http://wg.your-domain.com:2083 {
 ### 回源模式（需要 TLS 证书）
 
 ```caddyfile
-your-domain.com:2083 {
+blog.your-domain.com:2083 {
     tls {
         dns cloudflare {env.CLOUDFLARE_API_TOKEN}
     }

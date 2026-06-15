@@ -1,13 +1,13 @@
 # Cloudflare SSL 模式建议「完全(严格)」，Tunnel 提供端到端加密
+# BLOG_DOMAIN / WG_DOMAIN 均为一级子域名，被通配符证书覆盖
 
-http://{{DOMAIN}}:{{PORT}} {
+http://{{BLOG_DOMAIN}}:{{PORT}} {
     root * /var/www/blog
     file_server
     encode gzip
 }
 
-# wg-easy 使用一级子域名（被 *.example.com 通配符证书覆盖）
-http://{{WG_SUBDOMAIN}}.{{DOMAIN}}:{{PORT}} {
+http://{{WG_DOMAIN}}:{{PORT}} {
     reverse_proxy wg-easy:51821 {
         header_up Host {http.reverse_proxy.upstream.host}
         header_up X-Forwarded-For {remote_host}
