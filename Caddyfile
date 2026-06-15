@@ -6,9 +6,8 @@ http://{{DOMAIN}}:{{PORT}} {
     encode gzip
 }
 
-# wg-easy 使用一级子域名（被 *.juzhong.xyz 通配符覆盖）
-# 安装时根据实际情况替换 wg.{{DOMAIN}} 中的 DOMAIN
-http://wg.{{DOMAIN}}:{{PORT}} {
+# wg-easy 使用一级子域名（被 *.example.com 通配符证书覆盖）
+http://{{WG_SUBDOMAIN}}.{{DOMAIN}}:{{PORT}} {
     reverse_proxy wg-easy:51821 {
         header_up Host {http.reverse_proxy.upstream.host}
         header_up X-Forwarded-For {remote_host}
