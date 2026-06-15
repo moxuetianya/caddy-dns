@@ -35,8 +35,8 @@ PORT=${PORT:-2083}
 read -r -p "Cloudflare API Token: " CF_TOKEN
 [ -z "$CF_TOKEN" ] && { error "API Token 不能为空"; exit 1; }
 
-read -r -p "wg-easy Host (默认 $DOMAIN): " WG_HOST
-WG_HOST=${WG_HOST:-$DOMAIN}
+read -r -p "wg-easy Host (默认 $WG_SUBDOMAIN.$DOMAIN): " WG_HOST
+WG_HOST=${WG_HOST:-$WG_SUBDOMAIN.$DOMAIN}
 
 WG_PASSWORD=$(openssl rand -base64 12)
 read -r -p "wg-easy 管理员密码 (默认随机: ${WG_PASSWORD:0:8}***): " WG_PASS_INPUT
