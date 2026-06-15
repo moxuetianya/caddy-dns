@@ -1,13 +1,16 @@
 # Cloudflare SSL 模式建议「完全(严格)」，Tunnel 提供端到端加密
-http://{{WG_SUBDOMAIN}}.{{DOMAIN}}:{{PORT}} {
-    reverse_proxy wg-easy:51821 {
-        header_up Host {http.reverse_proxy.upstream.host}
-        header_up X-Forwarded-For {remote_host}
-    }
-}
 
 http://{{DOMAIN}}:{{PORT}} {
     root * /var/www/blog
     file_server
     encode gzip
+}
+
+# wg-easy 使用一级子域名（被 *.juzhong.xyz 通配符覆盖）
+# 安装时根据实际情况替换 wg.{{DOMAIN}} 中的 DOMAIN
+http://wg.{{DOMAIN}}:{{PORT}} {
+    reverse_proxy wg-easy:51821 {
+        header_up Host {http.reverse_proxy.upstream.host}
+        header_up X-Forwarded-For {remote_host}
+    }
 }

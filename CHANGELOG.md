@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-06-15
+
+### 修复
+- wg-easy 改用一级子域名 `wg.juzhong.xyz`（原 `wg.ali.juzhong.xyz` 被 Cloudflare Free 通配符证书拒绝）
+- Caddyfile 域名拼写错误修复
+
+### 变更
+- Caddyfile 拆分为两个独立站点（blog + wg-easy）
+- Tunnel ingress 添加 `wg.juzhong.xyz` 路由
+
 ## 2026-06-14
 
 ### 新增

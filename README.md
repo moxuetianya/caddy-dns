@@ -61,6 +61,8 @@ credentials-file: /home/peter/.cloudflared/<tunnel-id>.json
 ingress:
   - hostname: your-domain.com
     service: http://localhost:2083
+  - hostname: wg.your-domain.com
+    service: http://localhost:2083
   - service: http_status:404
 ```
 
@@ -161,13 +163,13 @@ wg-easy 是集成 Web UI 的 WireGuard VPN 管理工具。
 
 | 项目 | 值 |
 |------|-----|
-| Web UI | `https://your-domain.com/wg/` |
+| Web UI | `https://wg.your-domain.com/` |
 | WireGuard 端口 | `51820/udp` |
 | 配置文件 | `wg-easy/` 目录下的客户端 `.conf` 文件 |
 
 > **注意**：wg-easy v14+ 使用 `PASSWORD_HASH`（bcrypt）替代明文 `PASSWORD`。`install.sh` 会自动生成。
 
-子路径 `/wg/` 出现资源加载问题时，请改用子域名方案（见 Caddyfile 底部注释）。
+使用一级子域名（如 `wg.juzhong.xyz`）而非多级子域名，确保被 Cloudflare Free 套餐的 `*.juzhong.xyz` 通配符证书覆盖。
 
 ---
 
@@ -177,17 +179,15 @@ wg-easy 是集成 Web UI 的 WireGuard VPN 管理工具。
 
 ```caddyfile
 http://your-domain.com:2083 {
-    handle_path /wg* {
-        reverse_proxy wg-easy:51821 {
-            header_up Host {http.reverse_proxy.upstream.host}
-            header_up X-Forwarded-For {remote_host}
-        }
-    }
+    root * /var/www/blog
+    file_server
+    encode gzip
+}
 
-    handle {
-        root * /var/www/blog
-        file_server
-        encode gzip
+http://wg.your-domain.com:2083 {
+    reverse_proxy wg-easy:51821 {
+        header_up Host {http.reverse_proxy.upstream.host}
+        header_up X-Forwarded-For {remote_host}
     }
 }
 ```
