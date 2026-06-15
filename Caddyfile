@@ -1,15 +1,13 @@
 # Cloudflare SSL 模式建议「完全(严格)」，Tunnel 提供端到端加密
-http://{{DOMAIN}}:{{PORT}} {
-    handle_path /wg* {
-        reverse_proxy wg-easy:51821 {
-            header_up Host {http.reverse_proxy.upstream.host}
-            header_up X-Forwarded-For {remote_host}
-        }
+http://{{WG_SUBDOMAIN}}.{{DOMAIN}}:{{PORT}} {
+    reverse_proxy wg-easy:51821 {
+        header_up Host {http.reverse_proxy.upstream.host}
+        header_up X-Forwarded-For {remote_host}
     }
+}
 
-    handle {
-        root * /var/www/blog
-        file_server
-        encode gzip
-    }
+http://{{DOMAIN}}:{{PORT}} {
+    root * /var/www/blog
+    file_server
+    encode gzip
 }

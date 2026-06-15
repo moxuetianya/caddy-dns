@@ -26,6 +26,9 @@ echo ""
 read -r -p "域名: " DOMAIN
 [ -z "$DOMAIN" ] && { error "域名不能为空"; exit 1; }
 
+read -r -p "WireGuard 子域名 (默认 wg): " WG_SUBDOMAIN
+WG_SUBDOMAIN=${WG_SUBDOMAIN:-wg}
+
 read -r -p "监听端口 (默认 2083): " PORT
 PORT=${PORT:-2083}
 
@@ -49,9 +52,10 @@ if [ -z "$WG_PASSWORD_HASH" ]; then
 fi
 
 # ── 3. 替换占位符 ──
-sed -i "s/{{DOMAIN}}/$DOMAIN/g" "$SCRIPT_DIR/Caddyfile"
-sed -i "s/{{PORT}}/$PORT/g"     "$SCRIPT_DIR/Caddyfile"
-sed -i "s/{{PORT}}/$PORT/g"     "$SCRIPT_DIR/docker-compose.yaml"
+sed -i "s/{{WG_SUBDOMAIN}}/$WG_SUBDOMAIN/g" "$SCRIPT_DIR/Caddyfile"
+sed -i "s/{{DOMAIN}}/$DOMAIN/g"           "$SCRIPT_DIR/Caddyfile"
+sed -i "s/{{PORT}}/$PORT/g"               "$SCRIPT_DIR/Caddyfile"
+sed -i "s/{{PORT}}/$PORT/g"               "$SCRIPT_DIR/docker-compose.yaml"
 info "Caddyfile / docker-compose.yaml 已配置"
 
 # ── 4. 生成 .env ──
@@ -89,7 +93,7 @@ echo "    规则 → Origin Rules: https://$DOMAIN/* → 端口 $PORT"
 echo ""
 echo "  域名:       https://$DOMAIN"
 echo "  端口:       $PORT"
-echo "  wg-easy UI: https://$DOMAIN/wg/"
+echo "  wg-easy UI: https://$WG_SUBDOMAIN.$DOMAIN/"
 echo "  wg-easy 密码: $WG_PASSWORD (请妥善保管)"
 echo ""
 echo "  接下来运行:"

@@ -55,6 +55,8 @@ credentials-file: /home/peter/.cloudflared/<tunnel-id>.json
 ingress:
   - hostname: ali.juzhong.xyz
     service: http://localhost:2083
+  - hostname: wg.ali.juzhong.xyz
+    service: http://localhost:2083
   - service: http_status:404
 ```
 
@@ -62,9 +64,10 @@ ingress:
 
 ```bash
 cloudflared tunnel route dns <tunnel-id> ali.juzhong.xyz
+cloudflared tunnel route dns <tunnel-id> wg.ali.juzhong.xyz
 ```
 
-这会在 Cloudflare DNS 中自动添加一条 `ali.juzhong.xyz` 的 CNAME 记录，指向 Tunnel。
+这会在 Cloudflare DNS 中自动添加 CNAME 记录，将两个域名指向 Tunnel。
 
 ### 5. 启动 Tunnel
 

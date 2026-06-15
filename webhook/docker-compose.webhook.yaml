@@ -1,0 +1,21 @@
+services:
+  webhook:
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      - WEBHOOK_PORT=9000
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - BLOG_SOURCE_DIR=/blog-source
+      - BLOG_OUTPUT_DIR=/blog-output
+      - DEPLOY_SCRIPT=/app/deploy.sh
+    ports:
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - ./webhook:/app:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${BLOG_SOURCE_DIR:-/home/peter/project/blog}:/blog-source
+      - ./blog:/blog-output
+    command: sh -c "apk add --no-cache git rsync bash && node /app/server.js"
+    networks:
+      - caddy-net
